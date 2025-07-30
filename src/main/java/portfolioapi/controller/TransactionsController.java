@@ -18,7 +18,7 @@ public class TransactionsController {
     private final TransactionsMock transactionsMock = new TransactionsMock();
 
     @GetMapping("/transactions")
-    public List<Transaction> getTransactions(@RequestParam(value = "portfolioIds[]") long[] ids,
+    public List<Transaction> getTransactions(@RequestParam(value = "portfolioIds") long[] ids,
                                              @RequestParam(value = "startDate", required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
                                             @RequestParam(value = "endDate", required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate) {
         List<Transaction> listOfTransactions = transactionsMock.getTransactions(new Random().nextInt(5) + 1);
