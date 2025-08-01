@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import portfolioapi.model.Transaction;
+import portfolioapi.model.TransactionDTO;
 import portfolioapi.service.TransactionsService;
 
 import java.time.LocalDate;
@@ -24,9 +24,9 @@ public class TransactionsController {
     }
 
     @GetMapping("/transactions")
-    public List<Transaction> getTransactions(@RequestParam(value = "portfolioIds") long[] ids,
-                                             @RequestParam(value = "startDate", required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
-                                             @RequestParam(value = "endDate", required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate) {
+    public List<TransactionDTO> getTransactions(@RequestParam(value = "portfolioIds") long[] ids,
+                                                @RequestParam(value = "startDate", required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
+                                                @RequestParam(value = "endDate", required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate) {
 
 
         return transactionsService.getTransactions(ids, startDate, endDate);

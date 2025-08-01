@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import portfolioapi.model.Transaction;
+import portfolioapi.model.TransactionDTO;
 import portfolioapi.service.TokenProvider;
 import portfolioapi.service.TransactionsService;
 import reactor.core.publisher.Mono;
@@ -29,7 +29,7 @@ public class TransactionsServiceImpl implements TransactionsService {
     }
 
     @Override
-    public List<Transaction> getTransactions(long[] ids, LocalDate startDate, LocalDate endDate) {
+    public List<TransactionDTO> getTransactions(long[] ids, LocalDate startDate, LocalDate endDate) {
 
         Map<String, Object> payload = Map.of(
                 "query", QUERY,
@@ -43,15 +43,15 @@ public class TransactionsServiceImpl implements TransactionsService {
                 .retrieve()
                 .bodyToMono(String.class);
 
-        Mono<List<Transaction>> transactions = response.map(json -> {
+        Mono<List<TransactionDTO>> transactions = response.map(json -> {
             try {
-                List<Transaction> transactionList = new ArrayList<>();
+                List<TransactionDTO> transactionList = new ArrayList<>();
                 JsonNode jsonNode = objectMapper.readTree(json);
                 JsonNode portfoliosNode = jsonNode.get("data").get("portfoliosByIds");
                 for (final JsonNode portfolioNode : portfoliosNode) {
                     JsonNode transactionsNode = portfolioNode.get("transactions");
                     transactionList.addAll(objectMapper.convertValue(transactionsNode,
-                            objectMapper.getTypeFactory().constructCollectionType(List.class, Transaction.class)));
+                            objectMapper.getTypeFactory().constructCollectionType(List.class, TransactionDTO.class)));
                 }
                 return transactionList;
             } catch (Exception e) {
@@ -74,64 +74,28 @@ public class TransactionsServiceImpl implements TransactionsService {
 
     private static final String QUERY = """
                     query Transactions($ids: [Long], $startDate: String, $endDate: String) {
-                      portfoliosByIds( ids: $ids ) {
-                            transactions(status:"OK", startDate: $startDate, endDate: $endDate) {
-                                    portfolio:parentPortfolio {
-                            name
-                            shortName
-                            type {
-                              code
-                              name
-                            }
-                            primaryContact {
-                                    name
-                                    contactId
-                                    }
-                            currency {
-                              code:securityCode
-                              name
-                            }
-                          }
-                          type {
-                            code: typeCode
-                            name: typeName
-                          }
-                          transactionDate
-                          settlementDate
-                          paymentDate
-                          tradeTime
-                          extId
-                          security {
-                            name
-                            code:securityCode
-                            isinCode
-                            type {
-                              name
-                              code
-                            }
-                          }
-                          currency {
-                            name
-                            code:securityCode
-                          }
-                          account {
-                            name
-                            number
-                          }
-                          quantity: amount
-                          unitPrice:unitPriceView
-                          cost
-                          cost2
-                          tax
-                          tax2
-                          totalCost
-                          tradeAmount
-                          cashFlow
-                          cashFlowInAccountCurrency
-                          cashFlowInPortfolioCurrency
-                          extInfo
-                        }
-                      }
-                    }
+                   portfoliosByIds( ids: $ids ) {
+                         transactions(status:"OK", startDate: $startDate, endDate: $endDate) {
+                                 portfolio:parentPortfolio {
+                         shortName
+                 }
+                       transactionDate
+                       settlementDate
+                       security {
+                         name
+                         isinCode
+                       }
+                       currency {
+                         code:securityCode
+                       }
+                      type {
+                         name: typeName
+                       }
+                       quantity: amount
+                       unitPrice:unitPriceView
+                       tradeAmount
+                     }
+                   }
+                 }
                 """;
 }

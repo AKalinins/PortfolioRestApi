@@ -7,7 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
-import portfolioapi.model.Transaction;
+import portfolioapi.model.TransactionDTO;
 import portfolioapi.service.TokenProvider;
 import reactor.core.publisher.Mono;
 
@@ -40,25 +40,43 @@ class TransactionsServiceImplTest {
     @Mock
     private WebClient.ResponseSpec responseSpecMock;
 
+    /**
+     * {@link TransactionsServiceImpl#getTransactions(long[], LocalDate, LocalDate)}
+     */
     @Test
     void shouldSuccessfullyReturnListOfTransactions() {
-
+        // language=JSON
         Mono<String> response = Mono.just("""
                 {
-                  "data": {
-                    "portfoliosByIds": [
-                      {
-                        "transactions": [
-                          {
-                            "portfolio": {
-                              "shortName": "123B"
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                }
+                   "data": {
+                     "portfoliosByIds": [
+                       {
+                         "transactions": [
+                           {
+                             "portfolio": {
+                               "shortName": "123B"
+                             },
+                             "transactionDate": "2025-02-27",
+                             "settlementDate": "2025-08-09",
+                             "security": {
+                               "name": "MBGGR",
+                               "isinCode": "ISIN123456"
+                             },
+                             "currency": {
+                               "code": "EUR"
+                             },
+                             "type": {
+                               "name": "Coupon"
+                             },
+                             "quantity": 1000000,
+                             "unitPrice": 2.625,
+                             "tradeAmount": 26250
+                           }
+                         ]
+                       }
+                     ]
+                   }
+                 }
                 """);
 
         when(tokenProvider.getToken()).thenReturn("token");
@@ -71,11 +89,20 @@ class TransactionsServiceImplTest {
 
         target = new TransactionsServiceImpl(webClient, tokenProvider, objectMapper);
 
-        List<Transaction> result = target.getTransactions(new long[]{1,2},LocalDate.now(), LocalDate.now());
+        List<TransactionDTO> result = target.getTransactions(new long[]{1,2},LocalDate.now(), LocalDate.now());
 
         assertFalse(result.isEmpty());
         assertEquals(1, result.size());
-        assertEquals("123B", result.get(0).getPortfolio().getShortName());
+        assertEquals("123B", result.get(0).getPortfolioShortName());
+        assertEquals("MBGGR", result.get(0).getSecurityName());
+        assertEquals("ISIN123456", result.get(0).getSecurityIsinCode());
+        assertEquals("EUR", result.get(0).getCurrencyCode());
+        assertEquals("Coupon", result.get(0).getTypeName());
+        assertEquals("2025-02-27", result.get(0).getTransactionDate());
+        assertEquals("2025-08-09", result.get(0).getSettlementDate());
+        assertEquals("1000000", result.get(0).getAmount());
+        assertEquals("2.625", result.get(0).getUnitPrice());
+        assertEquals("26250", result.get(0).getTradeAmount());
 
         verify(webClient).post();
         verify(tokenProvider).getToken();
