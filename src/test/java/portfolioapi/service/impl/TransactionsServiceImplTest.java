@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import portfolioapi.model.TransactionDTO;
 import portfolioapi.service.TokenProvider;
@@ -81,6 +82,7 @@ class TransactionsServiceImplTest {
 
         when(tokenProvider.getToken()).thenReturn("token");
         when(webClient.post()).thenReturn(uriSpecMock);
+        when(uriSpecMock.uri("http://mocked-url.com")).thenReturn(uriSpecMock);
         when(uriSpecMock.contentType(MediaType.APPLICATION_JSON)).thenReturn(bodySpecMock);
         when(bodySpecMock.header(eq("Authorization"), anyString())).thenReturn(bodySpecMock);
         doReturn(headersSpecMock).when(bodySpecMock).bodyValue(any());
@@ -88,6 +90,7 @@ class TransactionsServiceImplTest {
         when(responseSpecMock.bodyToMono(String.class)).thenReturn(response);
 
         target = new TransactionsServiceImpl(webClient, tokenProvider, objectMapper);
+        ReflectionTestUtils.setField(target, "graphQlUrl", "http://mocked-url.com");
 
         List<TransactionDTO> result = target.getTransactions(new long[]{1,2},LocalDate.now(), LocalDate.now());
 

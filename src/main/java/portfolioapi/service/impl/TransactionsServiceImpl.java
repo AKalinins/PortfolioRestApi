@@ -3,6 +3,7 @@ package portfolioapi.service.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -12,10 +13,16 @@ import portfolioapi.service.TransactionsService;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class TransactionsServiceImpl implements TransactionsService {
+
+    @Value("${graphql.service.url}")
+    private String graphQlUrl;
 
     private final WebClient webClient;
     private final TokenProvider tokenProvider;
@@ -37,6 +44,7 @@ public class TransactionsServiceImpl implements TransactionsService {
         );
 
         Mono<String> response = webClient.post()
+                .uri(graphQlUrl)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + tokenProvider.getToken())
                 .bodyValue(payload)
