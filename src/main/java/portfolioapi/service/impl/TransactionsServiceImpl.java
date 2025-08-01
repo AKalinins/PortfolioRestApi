@@ -12,21 +12,20 @@ import portfolioapi.service.TransactionsService;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class TransactionsServiceImpl implements TransactionsService {
 
     private final WebClient webClient;
     private final TokenProvider tokenProvider;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     @Autowired
-    public TransactionsServiceImpl(WebClient webClient, TokenProvider tokenProvider) {
+    public TransactionsServiceImpl(WebClient webClient, TokenProvider tokenProvider, ObjectMapper objectMapper) {
         this.webClient = webClient;
         this.tokenProvider = tokenProvider;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -37,22 +36,28 @@ public class TransactionsServiceImpl implements TransactionsService {
                 "variables", getVariables(ids, startDate, endDate)
         );
 
-        Mono<List<Transaction>> transactions = webClient.post()
+        Mono<String> response = webClient.post()
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + tokenProvider.getToken())
                 .bodyValue(payload)
                 .retrieve()
-                .bodyToMono(String.class)
-                .map(response -> {
-                    try {
-                        JsonNode jsonNode = objectMapper.readTree(response);
-                        JsonNode usersNode = jsonNode.get("data").get("users");
-                        return objectMapper.convertValue(usersNode,
-                                objectMapper.getTypeFactory().constructCollectionType(List.class, Transaction.class));
-                    } catch (Exception e) {
-                        throw new RuntimeException("Failed to parse GraphQL response", e);
-                    }
-                });
+                .bodyToMono(String.class);
+
+        Mono<List<Transaction>> transactions = response.map(json -> {
+            try {
+                List<Transaction> transactionList = new ArrayList<>();
+                JsonNode jsonNode = objectMapper.readTree(json);
+                JsonNode portfoliosNode = jsonNode.get("data").get("portfoliosByIds");
+                for (final JsonNode portfolioNode : portfoliosNode) {
+                    JsonNode transactionsNode = portfolioNode.get("transactions");
+                    transactionList.addAll(objectMapper.convertValue(transactionsNode,
+                            objectMapper.getTypeFactory().constructCollectionType(List.class, Transaction.class)));
+                }
+                return transactionList;
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to parse GraphQL response", e);
+            }
+        });
 
         return transactions.block();
     }
