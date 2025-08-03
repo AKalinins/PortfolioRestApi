@@ -12,15 +12,15 @@ public class TokenDto {
     private String refreshToken;
     private int expiresIn;
     private int refreshExpiresIn;
-    private long tokenObtainedIn;
+    private long tokenObtainedAt;
 
     public boolean isValid() {
         return Objects.nonNull(token)
-                && ((System.currentTimeMillis() - tokenObtainedIn) / 1000) <= expiresIn;
+                && ((System.currentTimeMillis() - tokenObtainedAt) / 1000) < expiresIn;
     }
 
     public boolean isRefreshable() {
         return Objects.nonNull(refreshToken)
-                && ((System.currentTimeMillis() - tokenObtainedIn) / 1000) <= refreshExpiresIn;
+                && ((System.currentTimeMillis() - tokenObtainedAt) / 1000) < refreshExpiresIn;
     }
 }

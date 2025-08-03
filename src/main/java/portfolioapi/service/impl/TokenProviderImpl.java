@@ -67,7 +67,7 @@ public class TokenProviderImpl implements TokenProvider {
                         .refreshToken(jsonNode.get("refresh_token").asText())
                         .expiresIn(Integer.parseInt(jsonNode.get("expires_in").asText()))
                         .refreshExpiresIn(jsonNode.get("refresh_expires_in").asInt())
-                        .tokenObtainedIn(System.currentTimeMillis())
+                        .tokenObtainedAt(System.currentTimeMillis())
                         .build();
             } catch (Exception e) {
                 throw new RuntimeException("Failed to parse OpenId response", e);
