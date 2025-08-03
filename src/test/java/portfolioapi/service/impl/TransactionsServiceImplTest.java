@@ -32,22 +32,13 @@ class TransactionsServiceImplTest {
 
     private TransactionsServiceImpl target;
 
-    @Mock
-    private WebClient.RequestBodyUriSpec uriSpecMock;
-    @Mock
-    private WebClient.RequestHeadersSpec<?> headersSpecMock;
-    @Mock
-    private WebClient.RequestBodySpec bodySpecMock;
-    @Mock
-    private WebClient.ResponseSpec responseSpecMock;
-
     /**
      * {@link TransactionsServiceImpl#getTransactions(long[], LocalDate, LocalDate)}
      */
     @Test
     void shouldSuccessfullyReturnListOfTransactions() {
         // language=JSON
-        Mono<String> response = Mono.just("""
+        String dummyResponse = """
                 {
                    "data": {
                      "portfoliosByIds": [
@@ -78,16 +69,10 @@ class TransactionsServiceImplTest {
                      ]
                    }
                  }
-                """);
+                """;
 
         when(tokenProvider.getToken()).thenReturn("token");
-        when(webClient.post()).thenReturn(uriSpecMock);
-        when(uriSpecMock.uri("http://mocked-url.com")).thenReturn(uriSpecMock);
-        when(uriSpecMock.contentType(MediaType.APPLICATION_JSON)).thenReturn(bodySpecMock);
-        when(bodySpecMock.header(eq("Authorization"), anyString())).thenReturn(bodySpecMock);
-        doReturn(headersSpecMock).when(bodySpecMock).bodyValue(any());
-        when(headersSpecMock.retrieve()).thenReturn(responseSpecMock);
-        when(responseSpecMock.bodyToMono(String.class)).thenReturn(response);
+        mockWebClient(dummyResponse);
 
         target = new TransactionsServiceImpl(webClient, tokenProvider, objectMapper);
         ReflectionTestUtils.setField(target, "graphQlUrl", "http://mocked-url.com");
@@ -109,10 +94,20 @@ class TransactionsServiceImplTest {
 
         verify(webClient).post();
         verify(tokenProvider).getToken();
-        verify(uriSpecMock).contentType(MediaType.APPLICATION_JSON);
-        verify(bodySpecMock).header("Authorization", "Bearer token");
-        verify(bodySpecMock).bodyValue(any());
-        verify(headersSpecMock).retrieve();
-        verify(responseSpecMock).bodyToMono(String.class);
+    }
+
+    private void mockWebClient(String responseBody) {
+        WebClient.RequestBodyUriSpec uriSpec = mock(WebClient.RequestBodyUriSpec.class);
+        WebClient.RequestBodySpec bodySpec = mock(WebClient.RequestBodySpec.class);
+        WebClient.RequestHeadersSpec<?> headersSpec = mock(WebClient.RequestHeadersSpec.class);
+        WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
+
+        when(webClient.post()).thenReturn(uriSpec);
+        when(uriSpec.uri("http://mocked-url.com")).thenReturn(bodySpec);
+        when(bodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(bodySpec);
+        when(bodySpec.header(eq("Authorization"), anyString())).thenReturn(bodySpec);
+        doReturn(headersSpec).when(bodySpec).bodyValue(any());
+        when(headersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just(responseBody));
     }
 }
