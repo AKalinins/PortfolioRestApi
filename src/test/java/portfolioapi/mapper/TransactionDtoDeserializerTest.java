@@ -47,9 +47,9 @@ class TransactionDtoDeserializerTest {
         """;
 
         JsonParser parser = objectMapper.createParser(json);
-        DeserializationContext ctxt = mock(DeserializationContext.class);
+        DeserializationContext context = mock(DeserializationContext.class);
 
-        TransactionDTO result = deserializer.deserialize(parser, ctxt);
+        TransactionDTO result = deserializer.deserialize(parser, context);
 
         assertNotNull(result);
         assertEquals("MyPortfolio", result.getPortfolioShortName());
@@ -82,9 +82,9 @@ class TransactionDtoDeserializerTest {
         """;
 
         JsonParser parser = objectMapper.createParser(json);
-        DeserializationContext ctxt = mock(DeserializationContext.class);
+        DeserializationContext context = mock(DeserializationContext.class);
 
-        TransactionDTO dto = deserializer.deserialize(parser, ctxt);
+        TransactionDTO dto = deserializer.deserialize(parser, context);
 
         assertNotNull(dto);
         assertNull(dto.getPortfolioShortName());
