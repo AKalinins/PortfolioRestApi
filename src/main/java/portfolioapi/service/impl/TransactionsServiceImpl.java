@@ -10,6 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import portfolioapi.model.TransactionDTO;
 import portfolioapi.service.TokenProvider;
 import portfolioapi.service.TransactionsService;
+import portfolioapi.service.exception.JsonParsingException;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
@@ -63,7 +64,7 @@ public class TransactionsServiceImpl implements TransactionsService {
                 }
                 return transactionList;
             } catch (Exception e) {
-                throw new RuntimeException("Failed to parse GraphQL response", e);
+                throw new JsonParsingException("Failed to parse GraphQL response", e);
             }
         });
 

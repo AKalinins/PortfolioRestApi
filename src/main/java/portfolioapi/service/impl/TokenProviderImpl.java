@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import portfolioapi.service.TokenProvider;
+import portfolioapi.service.exception.JsonParsingException;
 import portfolioapi.service.impl.model.TokenDto;
 import reactor.core.publisher.Mono;
 
@@ -108,7 +109,7 @@ public class TokenProviderImpl implements TokenProvider {
                         .tokenObtainedAt(System.currentTimeMillis())
                         .build();
             } catch (Exception e) {
-                throw new RuntimeException("Failed to parse OpenId response", e);
+                throw new JsonParsingException("Failed to parse OpenId response", e);
             }
         });
 
