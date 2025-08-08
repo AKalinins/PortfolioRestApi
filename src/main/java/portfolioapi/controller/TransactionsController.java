@@ -46,7 +46,7 @@ public class TransactionsController {
         }
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.TEXT_PLAIN);
+        headers.setContentType(MediaType.parseMediaType("text/csv"));
         headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=transactions.csv");
 
         return new ResponseEntity<>(csvByteArray, headers, HttpStatus.OK);
