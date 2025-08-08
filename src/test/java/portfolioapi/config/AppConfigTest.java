@@ -21,11 +21,17 @@ class AppConfigTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    /**
+     * {@link AppConfig#webClient()}
+     */
     @Test
     void testWebClient() {
         assertNotNull(webClient);
     }
 
+    /**
+     * {@link AppConfig#objectMapper()}
+     */
     @Test
     void testObjectMapper() {
         assertNotNull(objectMapper);

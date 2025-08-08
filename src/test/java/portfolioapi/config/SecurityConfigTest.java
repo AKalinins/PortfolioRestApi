@@ -3,6 +3,7 @@ package portfolioapi.config;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
@@ -28,16 +29,25 @@ class SecurityConfigTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    /**
+     * {@link SecurityConfig#securityFilterChain(HttpSecurity)}
+     */
     @Test
     void testSecurityFilterChain() {
         assertNotNull(securityFilterChain);
     }
 
+    /**
+     * {@link SecurityConfig#users(DataSource)}
+     */
     @Test
     void testUserDetailsManager() {
         assertNotNull(userDetailsManager);
     }
 
+    /**
+     * {@link SecurityConfig#passwordEncoder()}
+     */
     @Test
     void testPasswordEncoder() {
         assertNotNull(passwordEncoder);
