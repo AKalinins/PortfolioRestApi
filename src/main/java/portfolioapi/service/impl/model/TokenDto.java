@@ -16,11 +16,11 @@ public class TokenDto {
 
     public boolean isValid() {
         return Objects.nonNull(token)
-                && ((System.currentTimeMillis() - tokenObtainedAt) / 1000) < expiresIn;
+                && ((System.currentTimeMillis() - tokenObtainedAt) / 1000) < (expiresIn - 10);
     }
 
     public boolean isRefreshable() {
         return Objects.nonNull(refreshToken)
-                && ((System.currentTimeMillis() - tokenObtainedAt) / 1000) < refreshExpiresIn;
+                && ((System.currentTimeMillis() - tokenObtainedAt) / 1000) < (refreshExpiresIn - 10);
     }
 }
