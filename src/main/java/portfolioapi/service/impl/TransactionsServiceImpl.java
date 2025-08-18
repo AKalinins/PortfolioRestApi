@@ -6,12 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestClient;
 import portfolioapi.model.TransactionDTO;
 import portfolioapi.service.TokenProvider;
 import portfolioapi.service.TransactionsService;
 import portfolioapi.service.exception.JsonParsingException;
-import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -25,13 +24,13 @@ public class TransactionsServiceImpl implements TransactionsService {
     @Value("${graphql.service.url}")
     private String graphQlUrl;
 
-    private final WebClient webClient;
+    private final RestClient restClient;
     private final TokenProvider tokenProvider;
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public TransactionsServiceImpl(WebClient webClient, TokenProvider tokenProvider, ObjectMapper objectMapper) {
-        this.webClient = webClient;
+    public TransactionsServiceImpl(RestClient restClient, TokenProvider tokenProvider, ObjectMapper objectMapper) {
+        this.restClient = restClient;
         this.tokenProvider = tokenProvider;
         this.objectMapper = objectMapper;
     }
@@ -44,31 +43,32 @@ public class TransactionsServiceImpl implements TransactionsService {
                 "variables", getVariables(ids, startDate, endDate)
         );
 
-        Mono<String> response = webClient.post()
+        String responseBody = restClient.post()
                 .uri(graphQlUrl)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + tokenProvider.getToken())
-                .bodyValue(payload)
+                .body(payload)
                 .retrieve()
-                .bodyToMono(String.class);
+                .body(String.class);
 
-        Mono<List<TransactionDTO>> transactions = response.map(json -> {
-            try {
-                List<TransactionDTO> transactionList = new ArrayList<>();
-                JsonNode jsonNode = objectMapper.readTree(json);
-                JsonNode portfoliosNode = jsonNode.get("data").get("portfoliosByIds");
-                for (final JsonNode portfolioNode : portfoliosNode) {
-                    JsonNode transactionsNode = portfolioNode.get("transactions");
-                    transactionList.addAll(objectMapper.convertValue(transactionsNode,
-                            objectMapper.getTypeFactory().constructCollectionType(List.class, TransactionDTO.class)));
-                }
-                return transactionList;
-            } catch (Exception e) {
-                throw new JsonParsingException("Failed to parse GraphQL response", e);
+        try {
+            List<TransactionDTO> transactionList = new ArrayList<>();
+            JsonNode jsonNode = objectMapper.readTree(responseBody);
+            JsonNode portfoliosNode = jsonNode.get("data").get("portfoliosByIds");
+
+            for (JsonNode portfolioNode : portfoliosNode) {
+                JsonNode transactionsNode = portfolioNode.get("transactions");
+                transactionList.addAll(objectMapper.convertValue(
+                        transactionsNode,
+                        objectMapper.getTypeFactory().constructCollectionType(List.class, TransactionDTO.class)
+                ));
             }
-        });
 
-        return transactions.block();
+            return transactionList;
+
+        } catch (Exception e) {
+            throw new JsonParsingException("Failed to parse GraphQL response", e);
+        }
     }
 
     private Map<String, Object> getVariables(long[] ids, LocalDate startDate, LocalDate endDate) {

@@ -7,24 +7,25 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestClient;
 import portfolioapi.model.TransactionDTO;
 import portfolioapi.service.TokenProvider;
-import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionsServiceImplTest {
 
     @Mock
-    private WebClient webClient;
+    private RestClient restClient;
     @Mock
     private TokenProvider tokenProvider;
 
@@ -72,9 +73,9 @@ class TransactionsServiceImplTest {
                 """;
 
         when(tokenProvider.getToken()).thenReturn("token");
-        mockWebClient(dummyResponse);
+        mockRestClient(dummyResponse);
 
-        target = new TransactionsServiceImpl(webClient, tokenProvider, objectMapper);
+        target = new TransactionsServiceImpl(restClient, tokenProvider, objectMapper);
         ReflectionTestUtils.setField(target, "graphQlUrl", "http://mocked-url.com");
 
         List<TransactionDTO> result = target.getTransactions(new long[]{1,2},LocalDate.now(), LocalDate.now());
@@ -92,22 +93,21 @@ class TransactionsServiceImplTest {
         assertEquals("2.625", result.get(0).getUnitPrice());
         assertEquals("26250", result.get(0).getTradeAmount());
 
-        verify(webClient).post();
+        verify(restClient).post();
         verify(tokenProvider).getToken();
     }
 
-    private void mockWebClient(String responseBody) {
-        WebClient.RequestBodyUriSpec uriSpec = mock(WebClient.RequestBodyUriSpec.class);
-        WebClient.RequestBodySpec bodySpec = mock(WebClient.RequestBodySpec.class);
-        WebClient.RequestHeadersSpec<?> headersSpec = mock(WebClient.RequestHeadersSpec.class);
-        WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
+    private void mockRestClient(String responseBody) {
+        RestClient.RequestBodyUriSpec uriSpec = mock(RestClient.RequestBodyUriSpec.class);
+        RestClient.RequestBodySpec bodySpec = mock(RestClient.RequestBodySpec.class);
+        RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
 
-        when(webClient.post()).thenReturn(uriSpec);
+        when(restClient.post()).thenReturn(uriSpec);
         when(uriSpec.uri("http://mocked-url.com")).thenReturn(bodySpec);
         when(bodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(bodySpec);
         when(bodySpec.header(eq("Authorization"), anyString())).thenReturn(bodySpec);
-        doReturn(headersSpec).when(bodySpec).bodyValue(any());
-        when(headersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just(responseBody));
+        when(bodySpec.body(any(Map.class))).thenReturn(bodySpec);
+        when(bodySpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.body(String.class)).thenReturn(responseBody);
     }
 }

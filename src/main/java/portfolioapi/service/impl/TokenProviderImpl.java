@@ -7,12 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClient;
 import portfolioapi.service.TokenProvider;
 import portfolioapi.service.exception.JsonParsingException;
 import portfolioapi.service.impl.model.TokenDto;
-import reactor.core.publisher.Mono;
 
 import java.util.Objects;
 
@@ -37,14 +37,14 @@ public class TokenProviderImpl implements TokenProvider {
     @Value("${graphql.service.password}")
     private String passwordCredential;
 
-    private final WebClient webClient;
+    private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
     private TokenDto tokenDto;
 
     @Autowired
-    public TokenProviderImpl(WebClient webClient, ObjectMapper objectMapper) {
-        this.webClient = webClient;
+    public TokenProviderImpl(RestClient restClient, ObjectMapper objectMapper) {
+        this.restClient = restClient;
         this.objectMapper = objectMapper;
     }
 
@@ -64,13 +64,13 @@ public class TokenProviderImpl implements TokenProvider {
 
         log.info("New access token requested");
 
-        BodyInserters.FormInserter<String> bodyInserters = BodyInserters
-                .fromFormData(GRANT_TYPE_KEY, PASSWORD)
-                .with(CLIENT_ID_KEY, EXTERNAL_API_VALUE)
-                .with(USERNAME, userNameCredential)
-                .with(PASSWORD, passwordCredential);
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add(GRANT_TYPE_KEY, PASSWORD);
+        formData.add(CLIENT_ID_KEY, EXTERNAL_API_VALUE);
+        formData.add(USERNAME, userNameCredential);
+        formData.add(PASSWORD, passwordCredential);
 
-        this.tokenDto = sendRequest(bodyInserters);
+        this.tokenDto = sendRequest(formData);
 
         return Objects.nonNull(tokenDto) ? tokenDto.getToken() : "";
     }
@@ -79,40 +79,36 @@ public class TokenProviderImpl implements TokenProvider {
 
         log.info("Refresh token requested");
 
-        BodyInserters.FormInserter<String> bodyInserters = BodyInserters
-                .fromFormData(GRANT_TYPE_KEY, REFRESH_TOKEN)
-                .with(CLIENT_ID_KEY, EXTERNAL_API_VALUE)
-                .with(REFRESH_TOKEN, tokenDto.getRefreshToken());
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add(GRANT_TYPE_KEY, REFRESH_TOKEN);
+        formData.add(CLIENT_ID_KEY, EXTERNAL_API_VALUE);
+        formData.add(REFRESH_TOKEN, tokenDto.getRefreshToken());
 
-        this.tokenDto = sendRequest(bodyInserters);
+        this.tokenDto = sendRequest(formData);
 
         return Objects.nonNull(tokenDto) ? tokenDto.getToken() : "";
     }
 
-    private TokenDto sendRequest(BodyInserters.FormInserter<String> bodyInserters) {
+    private TokenDto sendRequest(MultiValueMap<String, String> formData) {
 
-        Mono<String> response = webClient.post()
+        String responseBody = restClient.post()
                 .uri(openIdEndpoint)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(bodyInserters)
+                .body(formData)
                 .retrieve()
-                .bodyToMono(String.class);
+                .body(String.class);
 
-        Mono<TokenDto> tokenDtoMono = response.map(json -> {
-            try {
-                JsonNode jsonNode = objectMapper.readTree(json);
-                return TokenDto.builder()
-                        .token(jsonNode.get(ACCESS_TOKEN_VALUE).asText())
-                        .refreshToken(jsonNode.get(REFRESH_TOKEN).asText())
-                        .expiresIn(Integer.parseInt(jsonNode.get(EXPIRES_IN_VALUE).asText()))
-                        .refreshExpiresIn(jsonNode.get(REFRESH_EXPIRES_IN_VALUE).asInt())
-                        .tokenObtainedAt(System.currentTimeMillis())
-                        .build();
-            } catch (Exception e) {
-                throw new JsonParsingException("Failed to parse OpenId response", e);
-            }
-        });
-
-        return tokenDtoMono.block();
+        try {
+            JsonNode jsonNode = objectMapper.readTree(responseBody);
+            return TokenDto.builder()
+                    .token(jsonNode.get(ACCESS_TOKEN_VALUE).asText())
+                    .refreshToken(jsonNode.get(REFRESH_TOKEN).asText())
+                    .expiresIn(jsonNode.get(EXPIRES_IN_VALUE).asInt())
+                    .refreshExpiresIn(jsonNode.get(REFRESH_EXPIRES_IN_VALUE).asInt())
+                    .tokenObtainedAt(System.currentTimeMillis())
+                    .build();
+        } catch (Exception e) {
+            throw new JsonParsingException("Failed to parse OpenId response", e);
+        }
     }
 }

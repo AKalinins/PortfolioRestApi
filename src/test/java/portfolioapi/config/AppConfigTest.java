@@ -7,7 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestClient;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -17,16 +17,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class AppConfigTest {
 
     @Autowired
-    private WebClient webClient;
+    private RestClient restClient;
     @Autowired
     private ObjectMapper objectMapper;
 
     /**
-     * {@link AppConfig#webClient()}
+     * {@link AppConfig#restClient()}
      */
     @Test
-    void testWebClient() {
-        assertNotNull(webClient);
+    void testRestClient() {
+        assertNotNull(restClient);
     }
 
     /**

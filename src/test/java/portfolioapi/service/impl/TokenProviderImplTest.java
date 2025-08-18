@@ -5,10 +5,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClient;
 import portfolioapi.service.impl.model.TokenDto;
-import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 
@@ -17,7 +16,7 @@ import static org.mockito.Mockito.*;
 
 class TokenProviderImplTest {
 
-    private final WebClient webClient = mock(WebClient.class);
+    private final RestClient restClient = mock(RestClient.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private TokenProviderImpl tokenProvider;
 
@@ -33,7 +32,7 @@ class TokenProviderImplTest {
 
     @BeforeEach
     void setUp() {
-        tokenProvider = new TokenProviderImpl(webClient, objectMapper);
+        tokenProvider = new TokenProviderImpl(restClient, objectMapper);
 
         ReflectionTestUtils.setField(tokenProvider, "openIdEndpoint", "http://localhost/token");
         ReflectionTestUtils.setField(tokenProvider, "userNameCredential", "user");
@@ -45,13 +44,13 @@ class TokenProviderImplTest {
      */
     @Test
     void shouldRequestNewTokenWhenTokenIsNull() {
-        mockWebClient(dummyResponse);
+        mockRestClient(dummyResponse);
 
         String token = tokenProvider.getToken();
 
         assertEquals("new-access-token", token);
 
-        verify(webClient).post();
+        verify(restClient).post();
     }
 
     /**
@@ -73,7 +72,7 @@ class TokenProviderImplTest {
 
         assertEquals("existing-token", token);
 
-        verifyNoInteractions(webClient);
+        verifyNoInteractions(restClient);
     }
 
     /**
@@ -91,26 +90,25 @@ class TokenProviderImplTest {
 
         ReflectionTestUtils.setField(tokenProvider, "tokenDto", expiredToken);
 
-        mockWebClient(dummyResponse);
+        mockRestClient(dummyResponse);
 
         String token = tokenProvider.getToken();
 
         assertEquals("new-access-token", token);
 
-        verify(webClient).post();
+        verify(restClient).post();
     }
 
-    private void mockWebClient(String responseBody) {
-        WebClient.RequestBodyUriSpec uriSpec = mock(WebClient.RequestBodyUriSpec.class);
-        WebClient.RequestBodySpec bodySpec = mock(WebClient.RequestBodySpec.class);
-        WebClient.RequestHeadersSpec<?> headersSpec = mock(WebClient.RequestHeadersSpec.class);
-        WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
+    private void mockRestClient(String responseBody) {
+        RestClient.RequestBodyUriSpec uriSpec = mock(RestClient.RequestBodyUriSpec.class);
+        RestClient.RequestBodySpec bodySpec = mock(RestClient.RequestBodySpec.class);
+        RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
 
-        when(webClient.post()).thenReturn(uriSpec);
+        when(restClient.post()).thenReturn(uriSpec);
         when(uriSpec.uri(anyString())).thenReturn(bodySpec);
         when(bodySpec.contentType(MediaType.APPLICATION_FORM_URLENCODED)).thenReturn(bodySpec);
-        when(bodySpec.body(any(BodyInserters.FormInserter.class))).thenReturn(headersSpec);
-        when(headersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just(responseBody));
+        when(bodySpec.body(any(MultiValueMap.class))).thenReturn(bodySpec);
+        when(bodySpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.body(String.class)).thenReturn(responseBody);
     }
 }
