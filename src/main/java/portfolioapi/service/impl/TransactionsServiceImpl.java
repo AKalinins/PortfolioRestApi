@@ -75,8 +75,8 @@ public class TransactionsServiceImpl implements TransactionsService {
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("ids", ids);
-        variables.put("stratDate", startDate);
-        variables.put("endDate", endDate);
+        variables.put("startDate", startDate.toString());
+        variables.put("endDate", endDate.toString());
 
         return variables;
     }
